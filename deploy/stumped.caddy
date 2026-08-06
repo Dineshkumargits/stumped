@@ -1,0 +1,32 @@
+# Stumped vhosts — read by the shared Caddy in /srv/infra.
+#
+# Copy into place and reload (zero-downtime):
+#   cp /srv/stumped/deploy/stumped.caddy /srv/infra/caddy/sites/
+#   docker exec shared-caddy caddy reload --config /etc/caddy/Caddyfile
+#
+# Copy, not symlink — the sites dir is bind-mounted into the container.
+#
+# The http:// scheme is deliberate: public TLS is terminated by Cloudflare and
+# traffic arrives via the tunnel over the Docker network, so Caddy serves plain
+# HTTP internally (see the infra Caddyfile). Without it Caddy would try to get
+# certificates it neither needs nor can validate on this host.
+
+# ---- API ----
+http://api-stumped.adkdev.in {
+	import secure_headers
+	reverse_proxy stumped-backend:3005
+}
+
+# ---- Public scores site (lives under /live) ----
+http://stumped.adkdev.in {
+	import secure_headers
+
+	# Bare domain and /live both land on the app root.
+	redir / /live/ 302
+	redir /live /live/ 302
+
+	# Strip /live so nginx serves the site from its own root.
+	handle_path /live/* {
+		reverse_proxy stumped-web:80
+	}
+}

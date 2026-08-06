@@ -1,0 +1,42 @@
+# Stumped — production stack for the shared-infra VPS.
+#
+# Backend (NestJS/tRPC) + the static public scores site, both joined to the
+# external `shared-net` so the shared Caddy can reverse-proxy them by name.
+# MySQL and Redis are provided by /srv/infra — this stack does not run its own.
+#
+# Run from this directory (/srv/stumped/deploy) so the relative paths resolve:
+#
+#   cd /srv/stumped/deploy
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+name: stumped
+
+services:
+  backend:
+    build:
+      context: ..                      # repo root (/srv/stumped)
+      dockerfile: backend/Dockerfile
+    image: stumped-backend:latest
+    container_name: stumped-backend
+    restart: always
+    env_file:
+      - .env                           # /srv/stumped/deploy/.env (git-ignored)
+    environment:
+      - NODE_ENV=production
+      - PORT=3005
+    networks: [shared-net]
+    # No published ports — Caddy reaches it as stumped-backend:3005 over shared-net.
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: stumped-web
+    restart: always
+    volumes:
+      - ../web:/usr/share/nginx/html:ro   # /srv/stumped/web (the static site)
+    networks: [shared-net]
+    # Served internally at stumped-web:80; Caddy strips the /live prefix.
+
+networks:
+  shared-net:
+    name: shared-net
+    external: true
