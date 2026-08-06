@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  stumped-backend:
+    container_name: stumped-backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: always
+    ports:
+      - "3005:3005"
+    env_file:
+      - backend/.env
+    environment:
+      - PORT=3005
+      # Password percent-encoded (@ -> %40); DB name matches the Prisma schema DB
+      - DATABASE_URL=mysql://root:ADK%40mysql1@mysql:3306/stumped
+      - NODE_ENV=production
+    networks:
+      - mysql_mysql_net
+      - cloudflare-net
+
+networks:
+  mysql_mysql_net:
+    external: true
+  cloudflare-net:
+    external: true

@@ -1,0 +1,19 @@
+{
+  "name": "stumped",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cricket Turf Scoring & Analytics App",
+  "workspaces": [
+    "shared",
+    "backend",
+    "mobile"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:mobile": "npm run start --workspace=mobile",
+    "build:shared": "npm run build --workspace=shared",
+    "db:push": "npm run db:push --workspace=backend",
+    "db:generate": "npm run db:generate --workspace=backend",
+    "db:seed": "npm run db:seed --workspace=backend"
+  }
+}

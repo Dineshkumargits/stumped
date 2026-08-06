@@ -1,0 +1,44 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+jwt_secret.txt
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+
+# Expo / Metro (also covered by mobile/.gitignore)
+.expo/
+web-build/
+.metro-health-check*
+*.tsbuildinfo
+
+# Native build artifacts
+build/
+.gradle/
+/mobile/ios
+/mobile/android
+
+# Test coverage
+coverage/
+
+# Logs
+*.log

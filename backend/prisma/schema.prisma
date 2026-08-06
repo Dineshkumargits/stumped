@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================
+// AUTH & MULTI-TENANCY
+// ============================
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String
+  googleId    String   @unique
+  avatarColor String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clubMembers ClubMember[]
+
+  @@map("users")
+}
+
+model Club {
+  id         String   @id @default(uuid())
+  name       String
+  inviteCode String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  members ClubMember[]
+  players Player[]
+  matches Match[]
+  series  Series[]
+
+  @@map("clubs")
+}
+
+model ClubMember {
+  id       String     @id @default(uuid())
+  userId   String
+  clubId   String
+  role     MemberRole @default(PLAYER)
+  joinedAt DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clubId])
+  @@map("club_members")
+}
+
+// ============================
+// PLAYER MANAGEMENT
+// ============================
+
+model Player {
+  id             String         @id @default(uuid())
+  clubId         String
+  name           String
+  category       PlayerCategory @default(ALL_ROUNDER)
+  battingRating  Float          @default(50.0)
+  bowlingRating  Float          @default(50.0)
+  overallRating  Float          @default(50.0)
+  isRatingManual Boolean        @default(false)
+  linkedUserId   String?
+  avatarColor    String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  club           Club            @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  matchPlayers   MatchPlayer[]
+  battingInnings BattingInning[]
+  bowlingInnings BowlingInning[]
+  awards         Award[]
+
+  @@map("players")
+}
+
+// ============================
+// MATCH & SERIES
+// ============================
+
+model Series {
+  id        String   @id @default(uuid())
+  clubId    String
+  name      String
+  date      DateTime
+  createdAt DateTime @default(now())
+
+  club    Club    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  matches Match[]
+
+  @@map("series")
+}
+
+model Match {
+  id            String       @id @default(uuid())
+  clubId        String
+  seriesId      String?
+  totalOvers    Int
+  teamAName     String       @default("Team A")
+  teamBName     String       @default("Team B")
+  tossWinner    Team?
+  tossDecision  TossDecision?
+  status        MatchStatus  @default(SETUP)
+  winnerTeam    Team?
+  winMargin     String?
+  momPlayerId   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  club         Club          @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  series       Series?       @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  matchPlayers MatchPlayer[]
+  innings      Innings[]
+
+  @@map("matches")
+}
+
+model MatchPlayer {
+  id             String  @id @default(uuid())
+  matchId        String
+  playerId       String
+  team           Team
+  battingOrder   Int?
+  // When true, this player is also eligible to bat/bowl for the opposite
+  // team (used to handle odd-numbered player counts without a lone extra).
+  // `team` remains their home/primary team for roster-size accounting.
+  isDoubleSided  Boolean @default(false)
+
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, playerId])
+  @@map("match_players")
+}
+
+// ============================
+// INNINGS & BALL-BY-BALL SCORING
+// ============================
+
+model Innings {
+  id            String  @id @default(uuid())
+  matchId       String
+  inningsNumber Int
+  battingTeam   Team
+  bowlingTeam   Team
+  totalRuns     Int     @default(0)
+  totalWickets  Int     @default(0)
+  totalOvers    Float   @default(0)
+  totalExtras   Int     @default(0)
+  isCompleted   Boolean @default(false)
+
+  match          Match           @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  balls          Ball[]
+  battingInnings BattingInning[]
+  bowlingInnings BowlingInning[]
+
+  @@unique([matchId, inningsNumber])
+  @@map("innings")
+}
+
+model Ball {
+  id                String      @id @default(uuid())
+  inningsId         String
+  overNumber        Int
+  ballNumber        Int
+  sequenceNumber    Int
+  batsmanId         String
+  bowlerId          String
+  nonStrikerId      String
+  runs              Int         @default(0)
+  isWide            Boolean     @default(false)
+  isNoBall          Boolean     @default(false)
+  isWicket          Boolean     @default(false)
+  wicketType        WicketType?
+  dismissedPlayerId String?
+  timestamp         DateTime    @default(now())
+
+  innings Innings @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+
+  @@index([inningsId, sequenceNumber])
+  @@map("balls")
+}
+
+// ============================
+// AGGREGATED STATS PER INNINGS
+// ============================
+
+model BattingInning {
+  id            String      @id @default(uuid())
+  inningsId     String
+  playerId      String
+  runs          Int         @default(0)
+  balls         Int         @default(0)
+  fours         Int         @default(0)
+  sixes         Int         @default(0)
+  isOut         Boolean     @default(false)
+  dismissalType WicketType?
+  strikeRate    Float       @default(0)
+
+  innings Innings @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  player  Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([inningsId, playerId])
+  @@map("batting_innings")
+}
+
+model BowlingInning {
+  id      String @id @default(uuid())
+  inningsId String
+  playerId  String
+  overs     Float  @default(0)
+  maidens   Int    @default(0)
+  runs      Int    @default(0)
+  wickets   Int    @default(0)
+  wides     Int    @default(0)
+  noBalls   Int    @default(0)
+  economy   Float  @default(0)
+
+  innings Innings @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  player  Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([inningsId, playerId])
+  @@map("bowling_innings")
+}
+
+// ============================
+// AWARDS
+// ============================
+
+model Award {
+  id        String    @id @default(uuid())
+  playerId  String
+  clubId    String
+  type      AwardType
+  period    String?
+  matchId   String?
+  value     String?
+  awardedAt DateTime  @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("awards")
+}
+
+// ============================
+// ENUMS
+// ============================
+
+enum MemberRole {
+  ADMIN
+  SCORER
+  PLAYER
+}
+
+enum PlayerCategory {
+  BATSMAN
+  BOWLER
+  ALL_ROUNDER
+}
+
+enum Team {
+  TEAM_A
+  TEAM_B
+}
+
+enum TossDecision {
+  BAT
+  BOWL
+}
+
+enum MatchStatus {
+  SETUP
+  TOSS
+  FIRST_INNINGS
+  SECOND_INNINGS
+  COMPLETED
+}
+
+enum WicketType {
+  BOWLED
+  CAUGHT
+  RUN_OUT
+  STUMPED
+  HIT_WICKET
+  RETIRED
+}
+
+enum AwardType {
+  MOM
+  TOP_SCORER
+  TOP_WICKET_TAKER
+  BEST_BATTING_AVG
+  BEST_BOWLING_AVG
+}

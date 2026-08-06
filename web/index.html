@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Stumped · Live Scores</title>
+    <meta name="description" content="Live cricket scores, scorecards and leaderboards for your Stumped club." />
+    <meta property="og:title" content="Stumped · Live Scores" />
+    <meta property="og:description" content="Follow live cricket scores from your turf club." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand" id="brandHome" role="button" tabindex="0">
+        <span class="brand-mark">🏏</span>
+        <span class="brand-name">Stumped</span>
+        <span class="brand-tag">Live</span>
+      </div>
+      <div class="club-pill" id="clubPill" hidden></div>
+    </header>
+
+    <main id="app">
+      <!-- Code gate -->
+      <section id="gate" class="gate">
+        <div class="gate-card">
+          <div class="gate-icon">🏏</div>
+          <h1>Follow your club, live</h1>
+          <p class="gate-sub">
+            Enter your club's 6-character invite code to see live scores,
+            scorecards and leaderboards — no app, no sign-in.
+          </p>
+          <form id="codeForm" class="code-form" autocomplete="off">
+            <input
+              id="codeInput"
+              class="code-input"
+              maxlength="6"
+              placeholder="e.g. TURF01"
+              inputmode="latin"
+              aria-label="Club invite code"
+            />
+            <button class="btn primary" type="submit">View scores</button>
+          </form>
+          <p id="gateError" class="gate-error" hidden></p>
+        </div>
+      </section>
+
+      <!-- Club view -->
+      <section id="club" class="club" hidden>
+        <nav class="tabs" id="tabs">
+          <button class="tab" data-tab="live">🔴 Live</button>
+          <button class="tab" data-tab="matches">📋 Matches</button>
+          <button class="tab" data-tab="leaderboard">🏆 Leaderboard</button>
+          <button class="tab" data-tab="series">📊 Series</button>
+        </nav>
+        <div id="tabContent" class="tab-content"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Stumped · read-only public scores</span>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
