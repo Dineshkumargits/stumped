@@ -13,15 +13,18 @@ services:
       - backend/.env
     environment:
       - PORT=3005
-      # Password percent-encoded (@ -> %40); DB name matches the Prisma schema DB
-      - DATABASE_URL=mysql://root:ADK%40mysql1@mysql:3306/stumped
       - NODE_ENV=production
     networks:
-      - mysql_mysql_net
-      - cloudflare-net
+      - db
+      - tunnel
 
 networks:
-  mysql_mysql_net:
+  # Logical names; the real external network is picked per environment.
+  # Local defaults shown — production sets DB_NETWORK=shared-mysql and
+  # TUNNEL_NETWORK=shared-tunnel-adkdev (see .env next to this file).
+  db:
     external: true
-  cloudflare-net:
+    name: ${DB_NETWORK:-mysql_mysql_net}
+  tunnel:
     external: true
+    name: ${TUNNEL_NETWORK:-cloudflare-net}
