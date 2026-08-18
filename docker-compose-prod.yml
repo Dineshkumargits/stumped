@@ -15,13 +15,9 @@ services:
       - PORT=3005
       - NODE_ENV=production
     networks:
-      - db
       - tunnel
 
 networks:
-  db:
-    external: true
-    name: ${DB_NETWORK:-mysql_mysql_net}
   tunnel:
     external: true
-    name: ${TUNNEL_NETWORK:-cloudflare-net}
+    name: shared-net
